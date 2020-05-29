@@ -196,6 +196,13 @@ static ngx_command_t  ngx_stream_ssl_commands[] = {
       offsetof(ngx_stream_ssl_conf_t, crl),
       NULL },
 
+    { ngx_string("ssl_early_data"),
+      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_FLAG,
+      ngx_conf_set_flag_slot,
+      NGX_STREAM_SRV_CONF_OFFSET,
+      offsetof(ngx_stream_ssl_conf_t, early_data),
+      NULL },
+
       ngx_null_command
 };
 
@@ -285,6 +292,9 @@ static ngx_stream_variable_t  ngx_stream_ssl_vars[] = {
 
     { ngx_string("ssl_client_v_remain"), NULL, ngx_stream_ssl_variable,
       (uintptr_t) ngx_ssl_get_client_v_remain, NGX_STREAM_VAR_CHANGEABLE, 0 },
+
+    { ngx_string("ssl_early_data"), NULL, ngx_stream_ssl_variable,
+      (uintptr_t) ngx_ssl_get_early_data, NGX_STREAM_VAR_CHANGEABLE, 0 },
 
       ngx_stream_null_variable
 };
@@ -602,6 +612,7 @@ ngx_stream_ssl_create_conf(ngx_conf_t *cf)
     scf->session_timeout = NGX_CONF_UNSET;
     scf->session_tickets = NGX_CONF_UNSET;
     scf->session_ticket_keys = NGX_CONF_UNSET_PTR;
+    scf->early_data = NGX_CONF_UNSET;
 
     return scf;
 }
@@ -623,6 +634,8 @@ ngx_stream_ssl_merge_conf(ngx_conf_t *cf, void *parent, void *child)
 
     ngx_conf_merge_value(conf->prefer_server_ciphers,
                          prev->prefer_server_ciphers, 0);
+
+    ngx_conf_merge_value(conf->early_data, prev->early_data, 0);
 
     ngx_conf_merge_bitmask_value(conf->protocols, prev->protocols,
                          (NGX_CONF_BITMASK_SET|NGX_SSL_TLSv1
@@ -808,6 +821,10 @@ ngx_stream_ssl_merge_conf(ngx_conf_t *cf, void *parent, void *child)
     if (ngx_ssl_session_ticket_keys(cf, &conf->ssl, conf->session_ticket_keys)
         != NGX_OK)
     {
+        return NGX_CONF_ERROR;
+    }
+
+    if (ngx_ssl_early_data(cf, &conf->ssl, conf->early_data) != NGX_OK) {
         return NGX_CONF_ERROR;
     }
 

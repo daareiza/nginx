@@ -54,6 +54,8 @@ typedef struct {
 
     u_char          *file;
     ngx_uint_t       line;
+
+    ngx_flag_t      early_data;
 } ngx_stream_ssl_conf_t;
 
 
